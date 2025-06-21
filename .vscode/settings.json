@@ -1,6 +1,6 @@
 {
-    "deno.enable": true,
-    "deno.unstable": true,
-    "deno.lint": true,
-    "deno.internalDebug": true
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  }
 }

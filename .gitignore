@@ -1,2 +1,6 @@
 output/*.json
 output/*.txt
+tmp.*
+
+node_modules/
+dist/
