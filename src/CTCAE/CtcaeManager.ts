@@ -1,171 +1,95 @@
-import { CodedItem } from 'ehrcraft-form-api';
+import { CodedItem, DvCodedText } from 'ehrcraft-form-api';
+import { CTCAE_CATEGORY, CTCAE_DATABASE, CTCAE_MODEL } from './model';
 
-const SocTerm = "SocTerm";
-const SocTermName = "SocTermName";
-const SocGroup = "SocGroup";
-const SocName = "SocName";
-const CTCAE_VERSION = "CTCAE_5.0";
 
+const CATEGORY_TERM_ID = "MEDRA";
+const GRADE_CLASSIFICATION_TERM = "CTCAETERM";
 const accept_no_adverse_reaction = true;
 const no_adverse_reaction_label = "0-Absence of an adverse event or within normal limits";
+
+
+/**
+ * Manager for the CTCAE terms. 
+ * This is a rewrite of the existing managers used in FormScript. The intention is to make the usage clear and defined. 
+ * Also we want to minimize the bytes in the codes used. The previous versions had lots of duplicates. 
+ * 
+ * @see addListenersCtcae
+ */
 export class CTCAEManager {
 
 
-    constructor(private CtcaeGrades: DipsCode[], private CtcaeCategories: DipsCode[], private CtcaeTerms: DipsCode[]) {
+    constructor(private db: CTCAE_DATABASE) {
 
     }
 
-    public getGradesAsCodedItem(soc?: string, term?: string): CodedItem[] {
-        const arr: CodedItem[] = [];
-        for (const g of this.getGrades(soc, term)) {
-            const ord = g.code.substring(0, 1);
-            arr.push(new CodedItem(g.code, `${ord}-${g.name}` as string, g.name, g.codelist));
+    public getCategories(): CodedItem[]{
+        return this.db.categories.map(categoryToCodedItem);
+    }
+    public getTerms(): CodedItem[] {
+        return this.db.models.map(modelAsPrimaryCodedItem);
+    }
+    public getGrades():CodedItem[]{
+        return this.db.models.flatMap(modelToGradingCodedItems);
+    }
+    public getTermsByCategory(t?:DvCodedText){
+        const code = t?.definingCode.codeString;
+        if(code == undefined){
+            return this.getTerms();
+        }else{
+            return this.db.models.filter(x=>x.category == code).map(modelAsPrimaryCodedItem);
         }
-        if (accept_no_adverse_reaction) {
-            arr.push(new CodedItem(`0-${term}`, no_adverse_reaction_label, no_adverse_reaction_label, 'CTCAETERM'));
+    }
+    public getGradesByCategory(t?:DvCodedText){
+        const code = t?.definingCode.codeString;
+        if(code == undefined){
+            return this.getGrades();
+        }else{
+            return this.db.models.filter(x=>x.category == code).flatMap(modelToGradingCodedItems);
         }
-        return arr;
+    }
+    public getGradingsByTerm(t?:DvCodedText){
+        const code = t?.definingCode.codeString;
+        if(code == undefined){
+            return this.getGrades();
+        }else{
+            return this.db.models.filter(x=>x.code.toString() == code).flatMap(modelToGradingCodedItems);
+        }
+    }
+}
 
-    }
-    public getCategoriesAsCodedItem(): CodedItem[] {
-        const arr: CodedItem[] = [];
-        for (const c of this.CtcaeCategories) {
-            arr.push(new CodedItem(c.code, c.name, c.name, c.codelist));
-        }
-        return arr;
 
-    }
-    public getCategoryOfCode(code: string): DipsCode | undefined {
-        const res = this.CtcaeCategories.filter(x => x.code === code);
-        if (res && res.length === 1) {
-            return res[0];
-        }
-        this.emit(`No category found with code: ${code}`, "CATEGORY");
-        return undefined;
 
-    }
-    public getTermsAsCodedItem(soc?: string): CodedItem[] {
-        const arr: CodedItem[] = [];
-        for (const g of this.getTerms(soc)) {
-            arr.push(new CodedItem(g.code, g.name, g.name, g.codelist));
-        }
-        return arr;
-    }
-    public getTerms(soc?: string): DipsCode[] {
-        if (soc) {
-            return this.filterByParameter(SocGroup, soc, this.CtcaeTerms);
-        }
-        return this.CtcaeTerms;
-    }
-    public getTerm(code: string): DipsCode | undefined {
-        const arr = this.CtcaeTerms.filter(x => x.code === code);
-        if (arr && arr.length === 1) {
-            return arr[0];
-        }
-        return undefined;
+export function modelAsPrimaryCodedItem(t: CTCAE_MODEL) {
+    return new CodedItem(`${t.code}`, t.term, t.definition, CATEGORY_TERM_ID);
+}
 
-    }
-    public getGrades(soc?: string, term?: string): DipsCode[] {
-        if (soc && term) {
-            return this.filterBySocAndTerm(soc, term, this.CtcaeGrades);
-        }
-        if (soc) {
-            return this.filterByParameter(SocGroup, soc, this.CtcaeGrades);
-        }
-        if (term) {
-            return this.filterByParameter(SocTerm, term, this.CtcaeGrades);
-        }
-        return this.CtcaeGrades;
-    }
-    private filterByParameter(parameter: string, value: string, codes: DipsCode[]) {
-        return codes.filter(x => this.hasParameter(parameter, value, x));
-    }
+export function modelToGradingCodedItems(t: CTCAE_MODEL) {
+    const items: CodedItem[] = [];
+    addIf(1, t.g1);
+    addIf(2, t.g2);
+    addIf(3, t.g3);
+    addIf(4, t.g4);
+    addIf(5, t.g5);
+    return items;
+    /**
+     * Add grade if value is not - 
+     * @param n 
+     * @param value 
+     */
+    function addIf(n: number, value: string) {        
+        if (value.trim() == "-") {
+            console.log(`Skipping ${value} for items n=${n}`);
 
-    private filterBySocAndTerm(soc: string, term: string, codes: DipsCode[]) {
-        return codes.filter(x => {
-            return this.hasParameter(SocGroup, soc, x) && this.hasParameter(SocTerm, term, x);
-        })
-
-    }
-    private hasParameter(parameter: string, value: string, c: DipsCode) {
-        return c.parameters.filter(x => x.Name === parameter && x.Value === value).length > 0;
-    }
-
-    private emit(s: string, attr = "") {
-        console.log(`|-- db2.api ${attr}: ${s}`);
+        } else {
+            items.push(create(n, value));
+        }
+        function create(n: number, value: string) {
+            return new CodedItem(`${n}-${t.code}`, value, value, GRADE_CLASSIFICATION_TERM);
+        }
     }
 
 }
 
-/**
- * Defines the simplified CTCAE model to be used in the
- */
-export type CTCAE_MODEL = {
-    code: number;
-    category: string;
-    term: string;
-    g1: string;
-    g2: string;
-    g3: string;
-    g4: string;
-    g5: string;
-    definition: string;
-    change: string;
-};
-
-/**
- * Defines the columns in the Excel spreadshett 
- */
-export type CTCAE_ROW = {
-    "MedDRA Code": number;
-    "MedDRA SOC": string;
-    "CTCAE Term": string;
-    "Grade 1   ": string;
-    "Grade 2   ": string;
-    "Grade 3   ": string;
-    "Grade 4   ": string;
-    "Grade 5   ": string;
-    "Definition": string;
-    "CTCAE v5.0 Change": string;
-};
-
-export type CTCAE_DATABASE = {
-    categories: CTCAE_CATEGORY[];
-    models: CTCAE_MODEL[];
-};
-export type CTCAE_CATEGORY = {
-    id: number;
-    name: string;
-};
-
-type TERM_DOC_DEF = {
-    id: string,
-    desc: string
+function categoryToCodedItem(x:CTCAE_CATEGORY):CodedItem{
+    return new CodedItem(x.id.toString(), x.name, x.name, CATEGORY_TERM_ID  );
 }
-export const TERMINOLOGY_IDENTIFIERS: Record<string, TERM_DOC_DEF> = {
-    MEDRA: { id: "http://terminology.hl7.org/CodeSystem/mdr", desc: "https://terminology.hl7.org/CodeSystem-mdr.html" },
-    CTCAE_GRADE: { id: "CTCAETERM", desc: "https://discourse.openehr.org/t/ctcae-and-external-resources/3772/7" }
-}
-
-
-export interface DipsCode {
-    codelist: string;
-    code: string;
-    name: string;
-    parameters: DipsCodeSetParameter[];
-}
-export type DipsCodeSetParameter = {
-    Name: string;
-    Value: string;
-};
-
-export function getParameterValue(name: string, c: DipsCode): string | undefined {
-    const p = c.parameters.filter(x => x.Name === name);
-    if (!p || p.length <= 0) {
-        return undefined;
-    }
-    return p[0].Value;
-
-
-}
-
