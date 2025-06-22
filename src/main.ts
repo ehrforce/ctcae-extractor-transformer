@@ -2,8 +2,9 @@ import * as fs from 'node:fs';
 
 import * as XLSX from 'xlsx';
 
-import type { CTCAE_DATABASE } from './CTCAE/CtcaeManager.ts';
+
 import { fillModelsAndCategoriesFromJsonData, loadMapAndWriteTerms } from './transform';
+import { CTCAE_DATABASE } from './CTCAE/model';
 
 
 const EXCEL_SPREADSHEET_CTCAE = "./data/CTCAE_v5.0_2017-11-27.xlsx";

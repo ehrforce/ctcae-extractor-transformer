@@ -16,8 +16,10 @@ import { CTCAE_FIELDS } from "./model";
  * @param manager 
  */
 export function addListenersCtcae(api: API, fields: CTCAE_FIELDS, manager: CTCAEManager) {
+    emit("Adding listeners for CTCAE");
 
     api.addListener(fields.category, "OnFormInitialized", (id, value, parent) =>{
+        emit("Category initialized - will sett terms");
         const category = api.getFieldValue(fields.category, parent) as DvCodedText | null;
         const term = api.getFieldValue(fields.term, parent) as DvCodedText | null;
         const grade = api.getFieldValue(fields.grade_classification, parent) as DvCodedText | null;
@@ -26,6 +28,11 @@ export function addListenersCtcae(api: API, fields: CTCAE_FIELDS, manager: CTCAE
         api.setFieldValue(fields.category, category, parent);
 
         api.setCodeListItems(fields.term, manager.getTermsByCategory(category == null ? undefined : category ) , parent  );
+        api.setFieldValue(fields.term, term, parent);
+
+
+        api.setCodeListItems(fields.grade_classification, manager.getGradesByTerm(term == null ? undefined : term), parent);
+        api.setFieldValue(fields.grade_classification, grade, parent);
         
     });
 
@@ -38,21 +45,24 @@ export function addListenersCtcae(api: API, fields: CTCAE_FIELDS, manager: CTCAE
     });
 
     api.addListener(fields.category, "OnChanged", (id, value, parent) => {
+        emit(`Category changed to ${value}`);
         const t = value as DvCodedText | null;
         const terms = manager.getTermsByCategory(t == null ? undefined : t);
         const grades = manager.getGradesByCategory(t == null ? undefined : t);
+        emit(`Number for terms: ${terms.length}. Number of grades: ${grades.length}`);
 
         api.clearField(fields.term, parent);
         api.setCodeListItems(fields.term, terms, parent);
 
         api.clearField(fields.grade_classification, parent);
         api.setCodeListItems(fields.grade_classification, grades, parent);
+        emit(`Code list updated for category`);
 
     });
 
     api.addListener(fields.term, "OnChanged", (id, value, parent) => {
         const t = value as DvCodedText | null;
-        const gradings = manager.getGradingsByTerm(t == null ? undefined : t);
+        const gradings = manager.getGradesByTerm(t == null ? undefined : t);
         api.clearField(fields.grade_classification, parent);
         api.setCodeListItems(fields.grade_classification, gradings, parent);
     });
@@ -168,3 +178,6 @@ export function addListenersCtcae(api: API, fields: CTCAE_FIELDS, manager: CTCAE
 }
 
 
+function emit(s:string){
+    console.warn(">>> CTCAE: " + s);
+}

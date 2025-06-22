@@ -2,6 +2,11 @@
     "cSpell.words": [
         "CTCAETERM",
         "MEDRA"
-    ]
-  
+    ],
+ 
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  }
 }
+  

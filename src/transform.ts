@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import type { CTCAE_MODEL } from "./CTCAE/CtcaeManager";
+import type { CTCAE_MODEL } from "./CTCAE/model";
 import type { CTCAE_ROW } from "./CTCAE_ROW";
 import type { OutputFileDefinitions } from "./main";
 import { type GroupDef, SocGroupToRecord, soc_groups } from "./soc_groups";

@@ -17,10 +17,7 @@ const no_adverse_reaction_label = "0-Absence of an adverse event or within norma
  */
 export class CTCAEManager {
 
-
-    constructor(private db: CTCAE_DATABASE) {
-
-    }
+    constructor(private db: CTCAE_DATABASE) { }
 
     public getCategories(): CodedItem[]{
         return this.db.categories.map(categoryToCodedItem);
@@ -32,28 +29,38 @@ export class CTCAEManager {
         return this.db.models.flatMap(modelToGradingCodedItems);
     }
     public getTermsByCategory(t?:DvCodedText){
-        const code = t?.definingCode.codeString;
-        if(code == undefined){
+        const category = this.getCategory(t);
+        if(category == undefined){
             return this.getTerms();
         }else{
-            return this.db.models.filter(x=>x.category == code).map(modelAsPrimaryCodedItem);
+            return this.db.models.filter(x => x.category == category.name).map(modelAsPrimaryCodedItem);
         }
+        
     }
     public getGradesByCategory(t?:DvCodedText){
-        const code = t?.definingCode.codeString;
-        if(code == undefined){
+        const category = this.getCategory(t);
+        if(category == undefined){
             return this.getGrades();
         }else{
-            return this.db.models.filter(x=>x.category == code).flatMap(modelToGradingCodedItems);
+            return this.db.models.filter(x => x.category == category.name).flatMap(modelToGradingCodedItems);
         }
+        
     }
-    public getGradingsByTerm(t?:DvCodedText){
+    public getGradesByTerm(t?:DvCodedText){
         const code = t?.definingCode.codeString;
         if(code == undefined){
             return this.getGrades();
         }else{
             return this.db.models.filter(x=>x.code.toString() == code).flatMap(modelToGradingCodedItems);
         }
+    }
+    private getCategory(t?:DvCodedText){
+        if(t?.definingCode.codeString == undefined){
+            return undefined;
+        }
+
+        return this.db.categories.find(x => x.id.toString() == t.definingCode.codeString);
+
     }
 }
 
@@ -78,10 +85,10 @@ export function modelToGradingCodedItems(t: CTCAE_MODEL) {
      */
     function addIf(n: number, value: string) {        
         if (value.trim() == "-") {
-            console.log(`Skipping ${value} for items n=${n}`);
+            //console.log(`Skipping ${value} for items n=${n}`);
 
         } else {
-            items.push(create(n, value));
+            items.push(create(n, `${n} ${value}`));
         }
         function create(n: number, value: string) {
             return new CodedItem(`${n}-${t.code}`, value, value, GRADE_CLASSIFICATION_TERM);

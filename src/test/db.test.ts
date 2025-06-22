@@ -53,44 +53,44 @@ describe("Test can load categories", () => {
 		const grade1 = manager.getGrades().find((x) => x.code === ear1);
 		expect(grade1).toBeDefined();
 		expect(grade1?.name).toBe(
-			"Asymptomatic or mild symptoms; clinical or diagnostic observations only; intervention not indicated",
+			"1 Asymptomatic or mild symptoms; clinical or diagnostic observations only; intervention not indicated",
 		);
 		const ear5 = `5-${id}`;
 		const grade5 = manager.getGrades().find((x) => x.code === ear5);
 		expect(grade5).toBeDefined();
-		expect(grade5?.name).toBe("Death");
+		expect(grade5?.name).toBe("5 Death");
 
 	});
 	test("Ear get grading", ()=>{
 		const id = 10013993;
 		const name = "Ear and labyrinth disorders - Other, specify";
 		const t = toDvCodedText(name, id.toString());
-		const grades = manager.getGradingsByTerm(t);
+		const grades = manager.getGradesByTerm(t);
 		expect(grades).toBeDefined();
 		expect(grades.length).toBeGreaterThan(0);
 
 		const i1 = grades.find(x=>x.code === "1-10013993");
 		expect(i1).toBeDefined();
-		expect(i1?.name).toBe("Asymptomatic or mild symptoms; clinical or diagnostic observations only; intervention not indicated");
+		expect(i1?.name).toBe("1 Asymptomatic or mild symptoms; clinical or diagnostic observations only; intervention not indicated");
 
 		const i2 = grades.find(x=>x.code === "2-10013993");
 		expect(i2).toBeDefined();
-		expect(i2?.name).toBe("Moderate; minimal, local or noninvasive intervention indicated; limiting age-appropriate instrumental ADL");
+		expect(i2?.name).toBe("2 Moderate; minimal, local or noninvasive intervention indicated; limiting age-appropriate instrumental ADL");
 
 
 		const i3 = grades.find(x=>x.code === "3-10013993");
 		expect(i3).toBeDefined();
-		expect(i3?.name).toBe("Severe or medically significant but not immediately life-threatening; hospitalization or prolongation of existing hospitalization indicated; limiting self care ADL");
+		expect(i3?.name).toBe("3 Severe or medically significant but not immediately life-threatening; hospitalization or prolongation of existing hospitalization indicated; limiting self care ADL");
 
 
 		const i4 = grades.find(x=>x.code === "4-10013993");
 		expect(i4).toBeDefined();
-		expect(i4?.name).toBe("Life-threatening consequences; urgent intervention indicated");
+		expect(i4?.name).toBe("4 Life-threatening consequences; urgent intervention indicated");
 
 
 		const i5 = grades.find(x=>x.code === "5-10013993");
 		expect(i5).toBeDefined();
-		expect(i5?.name).toBe("Death");
+		expect(i5?.name).toBe("5 Death");
 
 		
 
